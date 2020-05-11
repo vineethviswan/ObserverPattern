@@ -4,52 +4,22 @@
 #include <algorithm>
 #include "observer.h"
 
-CNN::CNN(Reporter *rpt) {
-	
-	this->mReporter = rpt;
-	this->mReporter->addListener(this);
+boost::signals2::connection Reporter::addListener(const ListenerType& listener) {
+	return m_newsUpdate.connect(listener);
 }
 
-News18::News18(Reporter *rpt){
-	this->mReporter = rpt;
-	this->mReporter->addListener(this);
+void Reporter::newsReceived(const std::string& news) {
+	m_newsUpdate(news);
 }
 
-Asianet::Asianet(Reporter *rpt) {
-	this->mReporter = rpt;
-	this->mReporter->addListener(this);
+Channel::Channel(std::string name, Reporter &reporter) :m_channelName(name) {
+	m_connection = reporter.addListener(boost::bind(&Channel::update, this, boost::placeholders::_1));
 }
 
-void Reporter::newsReceived(std::string &pNews) {
-	mNews = pNews;
-	notifyChannels();
+void Channel::update(const std::string &news) {
+	std::cout << m_channelName << " : " << news << "\n";
 }
 
-std::string& Reporter::getNews() {
-	return mNews;
-}
-
-void Reporter::notifyChannels() {
-	for (auto itrChannel : mChannels)
-		itrChannel->update();
-}
-
-void Reporter::addListener(Channel *pCh) {
-	mChannels.push_back(pCh);
-}
-
-void Reporter::removeListener(Channel *pCh) {
-	//mChannels.erase(mChannels.begin(), mChannels.end(), *pCh);
-}
-
-void CNN::update() {
-	std::cout << "CNN - " << mReporter->getNews() << "\n";
-}
-
-void News18::update() {
-	std::cout << "News18 " << mReporter->getNews() << "\n";
-}
-
-void Asianet::update() {
-	std::cout << "Asianet " << mReporter->getNews() << "\n";
+Channel::~Channel() {
+	m_connection.disconnect();
 }

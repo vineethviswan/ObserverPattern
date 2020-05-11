@@ -1,44 +1,29 @@
 
-#include <vector>
 #include <string>
+#include <boost\signals2.hpp>
+#include <boost\bind.hpp>
 
-class Channel;
 
 class Reporter {
 public:
-	Reporter() = default;
-	void newsReceived(std::string &);
-	std::string& getNews();
-	void notifyChannels();
-	void addListener(Channel *);
-	void removeListener(Channel *);
+	using NewsUpdater = boost::signals2::signal<void(std::string)>;
+	using ListenerType = NewsUpdater::slot_type;
+	Reporter(const std::string& name):m_reporterName(name){}
+	void newsReceived(const std::string &);
+	boost::signals2::connection addListener(const ListenerType& listener);
+
 private:
-	std::vector<Channel*> mChannels;
-	std::string mNews;
+	std::string m_reporterName;
+	NewsUpdater m_newsUpdate;
 };
 
 class Channel {
 public:
-	virtual ~Channel() = default;
-	virtual void update() = 0;
+	Channel(std::string name, Reporter& reporter);
+	void update(const std::string &news);
+	~Channel();
 protected:
-	Reporter *mReporter;
+	std::string m_channelName;
+	boost::signals2::connection m_connection;
 };
 
-class CNN : public Channel {
-public:
-	CNN(Reporter *rpt);
-	void update();
-};
-
-class News18 : public Channel {
-public:
-	News18(Reporter *rpt);
-	void update();
-};
-
-class Asianet : public Channel {
-public:
-	Asianet(Reporter *rpt);
-	void update();
-};
